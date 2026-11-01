@@ -13,7 +13,18 @@ if (-not $context) {
 }
 
 # Retrieve the user from Microsoft Graph
-$user = Get-MgUser -UserId $UserPrincipalName -Property Id,DisplayName,UserPrincipalName,AccountEnabled,UsageLocation,AssignedLicenses
+try {
+    $user = Get-MgUser `
+        -UserId $UserPrincipalName `
+        -Property Id,DisplayName,UserPrincipalName,AccountEnabled,UsageLocation,AssignedLicenses `
+        -ErrorAction Stop
+}
+catch {
+    Write-Host ""
+    Write-Host "[ERROR] User not found in Microsoft Entra ID." -ForegroundColor Red
+    Write-Host "Target: $UserPrincipalName"
+    exit 1
+}
 
 # Display diagnostic header
 Write-Host ""
@@ -53,10 +64,22 @@ Write-Host "---------"
 $licenseCount = $user.AssignedLicenses.Count
 
 if ($licenseCount -gt 0) {
+
     Write-Host "[PASS] $licenseCount license(s) assigned." -ForegroundColor Green
 
+    $tenantSkus = Get-MgSubscribedSku -All
+
     foreach ($license in $user.AssignedLicenses) {
-        Write-Host "[INFO] SKU ID: $($license.SkuId)"
+
+        $matchedSku = $tenantSkus |
+            Where-Object { $_.SkuId -eq $license.SkuId }
+
+        if ($matchedSku) {
+            Write-Host "[INFO] License: $($matchedSku.SkuPartNumber)"
+        }
+        else {
+            Write-Host "[INFO] Unknown SKU: $($license.SkuId)"
+        }
     }
 }
 else {
@@ -68,10 +91,22 @@ Write-Host ""
 Write-Host "GROUP MEMBERSHIP" -ForegroundColor Cyan
 Write-Host "----------------"
 
-$groups = Get-MgUserMemberOf -UserId $UserPrincipalName -All
+$memberships = Get-MgUserMemberOf -UserId $UserPrincipalName -All
 
-if ($groups.Count -gt 0) {
-    Write-Host "[INFO] User belongs to $($groups.Count) directory object(s)." -ForegroundColor Cyan
+$groupIds = $memberships |
+    Where-Object {
+        $_.AdditionalProperties.'@odata.type' -eq '#microsoft.graph.group'
+    } |
+    Select-Object -ExpandProperty Id
+
+if ($groupIds.Count -gt 0) {
+
+    Write-Host "[INFO] User belongs to $($groupIds.Count) group(s)." -ForegroundColor Cyan
+
+    foreach ($groupId in $groupIds) {
+        $group = Get-MgGroup -GroupId $groupId
+        Write-Host "[INFO] Group: $($group.DisplayName)"
+    }
 }
 else {
     Write-Host "[INFO] No group memberships found."
