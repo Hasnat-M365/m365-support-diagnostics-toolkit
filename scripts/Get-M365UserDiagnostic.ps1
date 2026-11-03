@@ -9,7 +9,7 @@ $context = Get-MgContext
 if (-not $context) {
     Write-Host "Not connected to Microsoft Graph." -ForegroundColor Yellow
     Write-Host "Connecting with User.Read.All permission..."
-    Connect-MgGraph -Scopes "User.Read.All"
+    Connect-MgGraph -Scopes "User.Read.All","UserAuthenticationMethod.Read.All"
 }
 
 # Retrieve the user from Microsoft Graph
@@ -110,4 +110,67 @@ if ($groupIds.Count -gt 0) {
 }
 else {
     Write-Host "[INFO] No group memberships found."
+}
+
+# Retrieve authentication methods
+Write-Host ""
+Write-Host "AUTHENTICATION METHODS" -ForegroundColor Cyan
+Write-Host "----------------------"
+
+try {
+    $authMethods = Get-MgUserAuthenticationMethod `
+        -UserId $UserPrincipalName `
+        -ErrorAction Stop
+
+    if ($authMethods.Count -gt 0) {
+
+        Write-Host "[PASS] $($authMethods.Count) authentication method(s) registered." -ForegroundColor Green
+
+        foreach ($method in $authMethods) {
+
+            $methodType = $method.AdditionalProperties.'@odata.type'
+
+            switch ($methodType) {
+
+                "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod" {
+                    Write-Host "[INFO] Microsoft Authenticator"
+                }
+
+                "#microsoft.graph.phoneAuthenticationMethod" {
+                    Write-Host "[INFO] Phone authentication"
+                }
+
+                "#microsoft.graph.fido2AuthenticationMethod" {
+                    Write-Host "[INFO] FIDO2 security key"
+                }
+
+                "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" {
+                    Write-Host "[INFO] Windows Hello for Business"
+                }
+
+                "#microsoft.graph.softwareOathAuthenticationMethod" {
+                    Write-Host "[INFO] Software OATH token"
+                }
+
+                "#microsoft.graph.temporaryAccessPassAuthenticationMethod" {
+                    Write-Host "[INFO] Temporary Access Pass"
+                }
+
+                "#microsoft.graph.passwordAuthenticationMethod" {
+                    Write-Host "[INFO] Password"
+                }
+
+                default {
+                    Write-Host "[INFO] Other authentication method: $methodType"
+                }
+            }
+        }
+    }
+    else {
+        Write-Host "[WARNING] No authentication methods found." -ForegroundColor Yellow
+    }
+}
+catch {
+    Write-Host "[ERROR] Unable to retrieve authentication methods." -ForegroundColor Red
+    Write-Host "[INFO] Verify Microsoft Graph permissions."
 }
