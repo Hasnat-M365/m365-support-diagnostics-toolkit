@@ -198,3 +198,52 @@ catch {
     Write-Host "[ERROR] Unable to retrieve authentication methods." -ForegroundColor Red
     Write-Host "[INFO] Verify Microsoft Graph permissions."
 }
+
+# Display diagnostic summary
+Write-Host ""
+Write-Host "DIAGNOSTIC SUMMARY" -ForegroundColor Cyan
+Write-Host "------------------"
+
+# Account status
+if ($user.AccountEnabled) {
+    Write-Host "[PASS] Account enabled" -ForegroundColor Green
+}
+else {
+    Write-Host "[WARNING] Account disabled" -ForegroundColor Yellow
+}
+
+# Usage location
+if ([string]::IsNullOrWhiteSpace($user.UsageLocation)) {
+    Write-Host "[WARNING] Usage location missing" -ForegroundColor Yellow
+}
+else {
+    Write-Host "[PASS] Usage location configured" -ForegroundColor Green
+}
+
+# Licensing
+if ($licenseCount -gt 0) {
+    Write-Host "[PASS] $licenseCount license(s) assigned" -ForegroundColor Green
+}
+else {
+    Write-Host "[WARNING] No licenses assigned" -ForegroundColor Yellow
+}
+
+# Group membership
+if ($groupIds.Count -gt 0) {
+    Write-Host "[PASS] $($groupIds.Count) group membership(s) found" -ForegroundColor Green
+}
+else {
+    Write-Host "[INFO] No group memberships found"
+}
+
+# Authentication methods
+$nonPasswordMethods = $authMethods | Where-Object {
+    $_.AdditionalProperties.'@odata.type' -ne '#microsoft.graph.passwordAuthenticationMethod'
+}
+
+if ($nonPasswordMethods.Count -gt 0) {
+    Write-Host "[PASS] Additional authentication method(s) registered" -ForegroundColor Green
+}
+else {
+    Write-Host "[WARNING] Only password authentication detected" -ForegroundColor Yellow
+}
