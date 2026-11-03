@@ -1,0 +1,37 @@
+Microsoft 365 User Diagnostic
+=============================
+
+Target: alex.taylor@contoso.com
+
+IDENTITY
+--------
+[PASS] User found: Alex Taylor
+[INFO] User ID: 00000000-0000-0000-0000-000000000000
+[PASS] Account is enabled.
+[PASS] Usage location: US
+
+LICENSING
+---------
+[PASS] 2 license(s) assigned.
+[INFO] License: Microsoft_365_E5
+[INFO] License: Microsoft_Teams_Enterprise
+
+GROUP MEMBERSHIP
+----------------
+[INFO] User belongs to 2 group(s).
+[INFO] Group: Microsoft 365 Users
+[INFO] Group: IT Support
+
+AUTHENTICATION METHODS
+----------------------
+[PASS] 2 authentication method(s) registered.
+[INFO] Password
+[INFO] Microsoft Authenticator
+
+DIAGNOSTIC SUMMARY
+------------------
+[PASS] Account enabled
+[PASS] Usage location configured
+[PASS] 2 license(s) assigned
+[PASS] 2 group membership(s) found
+[PASS] Additional authentication method(s) registered

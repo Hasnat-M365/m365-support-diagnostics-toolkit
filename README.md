@@ -81,6 +81,26 @@ user@contoso.com
 
 The script retrieves diagnostic information about the specified Microsoft 365 user.
 
+## 📊 Sample Output
+
+A sanitized example of the diagnostic output is available in:
+
+[`sample-output/Example-UserDiagnostic.txt`](sample-output/Example-UserDiagnostic.txt)
+
+Example:
+
+```text
+DIAGNOSTIC SUMMARY
+------------------
+[PASS] Account enabled
+[PASS] Usage location configured
+[PASS] 2 license(s) assigned
+[PASS] 2 group membership(s) found
+[PASS] Additional authentication method(s) registered
+```
+
+All sample users, identifiers, groups, and tenant information in this repository are fictional or sanitized.
+
 ## 🧪 Lab Approach
 
 Development and testing are performed using non-production scenarios with fictional or sanitized user information.
@@ -100,7 +120,6 @@ Troubleshooting scenarios follow a structured workflow:
 
 Planned improvements include:
 
-- Authentication method diagnostics
 - MFA-related checks
 - Sign-in troubleshooting
 - Improved license analysis
