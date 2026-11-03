@@ -1,54 +1,129 @@
 # Microsoft 365 Support Diagnostics Toolkit
 
-A practical PowerShell-based Microsoft 365 troubleshooting project for investigating common identity, licensing, Exchange Online, group membership, and tenant configuration issues.
+A practical PowerShell-based Microsoft 365 troubleshooting project designed to automate common user diagnostic tasks using Microsoft Graph.
+
+The project is being developed as a hands-on Microsoft 365 administration and support toolkit, with a focus on identity, licensing, access, and troubleshooting workflows.
 
 ## 🎯 Project Goal
 
-The goal of this project is to develop repeatable diagnostic tools and troubleshooting workflows for common Microsoft 365 support scenarios.
+The goal of this project is to build reusable PowerShell diagnostic tools for common Microsoft 365 support scenarios.
 
-The project focuses on:
+The toolkit is designed to demonstrate practical skills in:
 
-- Microsoft Entra ID user diagnostics
+- Microsoft Entra ID administration
+- Microsoft 365 user troubleshooting
 - Microsoft 365 licensing investigation
-- Exchange Online mailbox diagnostics
 - Group membership analysis
-- Microsoft 365 PowerShell automation
-- Troubleshooting documentation
-- Root-cause analysis
+- Microsoft Graph PowerShell
+- PowerShell automation
+- Structured troubleshooting and root-cause analysis
+
+## ✅ Current Features
+
+The first diagnostic script, `Get-M365UserDiagnostic.ps1`, can currently:
+
+- Look up a Microsoft 365 user by User Principal Name (UPN)
+- Display basic user information
+- Check whether the user account is enabled
+- Check the user's usage location
+- Review assigned Microsoft 365 licenses
+- Retrieve the user's group memberships
 
 ## 🧰 Technologies
 
-This project will use:
+The project currently uses:
 
-- Microsoft 365
-- Microsoft Entra ID
-- Exchange Online
-- Microsoft Graph PowerShell SDK
-- Exchange Online PowerShell
 - PowerShell 7
+- Microsoft Graph PowerShell SDK
+- Microsoft Entra ID
+- Microsoft 365
+- Git
 - GitHub
 
-## 🧪 Lab Approach
-
-Troubleshooting scenarios will be reproduced in a non-production lab environment using fictional users and sanitized information.
-
-Each troubleshooting case will follow this workflow:
-
-1. Reproduce the issue
-2. Identify the symptoms
-3. Gather diagnostic information
-4. Develop troubleshooting hypotheses
-5. Identify the root cause
-6. Implement remediation
-7. Validate the solution
-8. Document lessons learned
+Additional Microsoft 365 technologies will be introduced as the toolkit develops.
 
 ## 📂 Repository Structure
 
 ```text
 m365-support-diagnostics-toolkit/
-├── scripts/
 ├── docs/
 ├── sample-output/
-├── README.md
-└── LICENSE
+├── scripts/
+│   ├── Get-M365UserDiagnostic.ps1
+│   └── README.md
+├── LICENSE
+└── README.md
+```
+
+## 🚀 Running the Diagnostic Script
+
+### Prerequisites
+
+- PowerShell 7
+- Microsoft Graph PowerShell SDK
+- A Microsoft 365 account with appropriate Microsoft Graph permissions
+
+### Run the script
+
+From PowerShell:
+
+```powershell
+.\scripts\Get-M365UserDiagnostic.ps1
+```
+
+Enter the User Principal Name when prompted.
+
+Example:
+
+```text
+user@contoso.com
+```
+
+The script retrieves diagnostic information about the specified Microsoft 365 user.
+
+## 🧪 Lab Approach
+
+Development and testing are performed using non-production scenarios with fictional or sanitized user information.
+
+Troubleshooting scenarios follow a structured workflow:
+
+1. Identify the reported issue
+2. Gather diagnostic information
+3. Review account and configuration data
+4. Develop troubleshooting hypotheses
+5. Identify the root cause
+6. Apply the appropriate remediation
+7. Validate the result
+8. Document the troubleshooting process
+
+## 🗺️ Roadmap
+
+Planned improvements include:
+
+- Authentication method diagnostics
+- MFA-related checks
+- Sign-in troubleshooting
+- Improved license analysis
+- Exchange Online mailbox diagnostics
+- Additional error handling
+- Diagnostic summaries
+- Exportable reports
+- Additional Microsoft 365 troubleshooting scripts
+
+## 🔐 Security and Privacy
+
+This repository is intended for learning, lab testing, and administrative troubleshooting.
+
+Do not commit:
+
+- Real user credentials
+- Access tokens
+- Client secrets
+- Production tenant information
+- Sensitive or personally identifiable information
+
+Use fictional or sanitized information in examples and sample output.
+
+## 📄 License
+
+This project is provided under the license included in the repository.
