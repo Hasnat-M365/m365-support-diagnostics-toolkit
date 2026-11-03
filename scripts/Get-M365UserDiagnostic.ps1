@@ -3,13 +3,37 @@ param(
     [string]$UserPrincipalName
 )
 
-# Check Microsoft Graph connection
+# Define required Microsoft Graph permissions
+$requiredScopes = @(
+    "User.Read.All",
+    "UserAuthenticationMethod.Read.All"
+)
+
+# Check current Microsoft Graph connection
 $context = Get-MgContext
 
 if (-not $context) {
+
     Write-Host "Not connected to Microsoft Graph." -ForegroundColor Yellow
-    Write-Host "Connecting with User.Read.All permission..."
-    Connect-MgGraph -Scopes "User.Read.All","UserAuthenticationMethod.Read.All"
+    Write-Host "Connecting to Microsoft Graph..."
+
+    Connect-MgGraph -Scopes $requiredScopes
+}
+else {
+
+    $missingScopes = $requiredScopes |
+        Where-Object { $_ -notin $context.Scopes }
+
+    if ($missingScopes) {
+
+        Write-Host "Microsoft Graph connection is missing required permissions." -ForegroundColor Yellow
+        Write-Host "Reconnecting with required permissions..."
+
+        Connect-MgGraph -Scopes $requiredScopes
+    }
+    else {
+        Write-Host "[PASS] Microsoft Graph connection verified." -ForegroundColor Green
+    }
 }
 
 # Retrieve the user from Microsoft Graph
