@@ -81,6 +81,18 @@ user@contoso.com
 
 The script retrieves diagnostic information about the specified Microsoft 365 user.
 
+### Export a Diagnostic Report
+
+The diagnostic results can optionally be exported to a text file:
+
+```powershell
+.\scripts\Get-M365UserDiagnostic.ps1 `
+    -UserPrincipalName "user@contoso.com" `
+    -ExportPath ".\report.txt"
+```
+
+Generated diagnostic reports may contain tenant or user information and should not be committed to source control. The repository's `.gitignore` excludes generated report files.
+
 ## 📊 Sample Output
 
 A sanitized example of the diagnostic output is available in:
