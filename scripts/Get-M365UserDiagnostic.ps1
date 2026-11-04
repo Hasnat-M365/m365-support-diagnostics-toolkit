@@ -1,6 +1,9 @@
 param(
     [Parameter(Mandatory)]
-    [string]$UserPrincipalName
+    [string]$UserPrincipalName,
+
+    [Parameter()]
+    [string]$ExportPath
 )
 
 # Define required Microsoft Graph permissions
@@ -246,4 +249,46 @@ if ($nonPasswordMethods.Count -gt 0) {
 }
 else {
     Write-Host "[WARNING] Only password authentication detected" -ForegroundColor Yellow
+}
+
+# Export diagnostic report if an export path was provided
+if ($ExportPath) {
+
+    $report = @"
+Microsoft 365 User Diagnostic Report
+====================================
+
+Target: $($user.UserPrincipalName)
+Display Name: $($user.DisplayName)
+User ID: $($user.Id)
+Account Enabled: $($user.AccountEnabled)
+Usage Location: $($user.UsageLocation)
+
+LICENSING
+---------
+Assigned Licenses: $licenseCount
+
+GROUP MEMBERSHIP
+----------------
+Group Memberships: $($groupIds.Count)
+
+AUTHENTICATION
+--------------
+Registered Authentication Methods: $($authMethods.Count)
+
+DIAGNOSTIC SUMMARY
+------------------
+Account Enabled: $($user.AccountEnabled)
+Usage Location Configured: $(-not [string]::IsNullOrWhiteSpace($user.UsageLocation))
+Licenses Assigned: $licenseCount
+Group Memberships: $($groupIds.Count)
+Authentication Methods: $($authMethods.Count)
+
+Generated: $(Get-Date)
+"@
+
+    $report | Out-File -FilePath $ExportPath -Encoding utf8
+
+    Write-Host ""
+    Write-Host "[PASS] Diagnostic report exported to: $ExportPath" -ForegroundColor Green
 }

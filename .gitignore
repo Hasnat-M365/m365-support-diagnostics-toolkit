@@ -1,0 +1,7 @@
+# Generated diagnostic reports
+report.txt
+*-report.txt
+diagnostic-reports/
+
+# PowerShell temporary files
+*.tmp
