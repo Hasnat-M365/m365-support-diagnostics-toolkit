@@ -181,10 +181,15 @@ Write-Host ""
 Write-Host "AUTHENTICATION METHODS" -ForegroundColor Cyan
 Write-Host "----------------------"
 
+$authMethods = @()
+$authCheckSucceeded = $true
+
 try {
-    $authMethods = Get-MgUserAuthenticationMethod `
-        -UserId $UserPrincipalName `
-        -ErrorAction Stop
+    $authMethods = @(
+        Get-MgUserAuthenticationMethod `
+            -UserId $UserPrincipalName `
+            -ErrorAction Stop
+    )
 
     if ($authMethods.Count -gt 0) {
 
@@ -235,8 +240,11 @@ try {
     }
 }
 catch {
+    $authCheckSucceeded = $false
+
     Write-Host "[ERROR] Unable to retrieve authentication methods." -ForegroundColor Red
-    Write-Host "[INFO] Verify Microsoft Graph permissions."
+    Write-Host "[INFO] Verify Microsoft Graph permissions." -ForegroundColor Cyan
+    Write-Host "[INFO] The diagnostic will continue." -ForegroundColor Cyan
 }
 
 # Display diagnostic summary
@@ -261,7 +269,10 @@ else {
 }
 
 # Licensing
-if ($licenseCount -gt 0) {
+if (-not $licensingCheckSucceeded) {
+    Write-Host "[WARNING] License details could not be fully retrieved" -ForegroundColor Yellow
+}
+elseif ($licenseCount -gt 0) {
     Write-Host "[PASS] $licenseCount license(s) assigned" -ForegroundColor Green
 }
 else {
@@ -269,7 +280,10 @@ else {
 }
 
 # Group membership
-if ($groupIds.Count -gt 0) {
+if (-not $groupCheckSucceeded) {
+    Write-Host "[WARNING] Group membership check could not be completed" -ForegroundColor Yellow
+}
+elseif ($groupIds.Count -gt 0) {
     Write-Host "[PASS] $($groupIds.Count) group membership(s) found" -ForegroundColor Green
 }
 else {
@@ -277,83 +291,107 @@ else {
 }
 
 # Authentication methods
-$nonPasswordMethods = $authMethods | Where-Object {
-    $_.AdditionalProperties.'@odata.type' -ne '#microsoft.graph.passwordAuthenticationMethod'
-}
-
-if ($nonPasswordMethods.Count -gt 0) {
-    Write-Host "[PASS] Additional authentication method(s) registered" -ForegroundColor Green
+if (-not $authCheckSucceeded) {
+    Write-Host "[WARNING] Authentication method check could not be completed" -ForegroundColor Yellow
+    $nonPasswordMethods = @()
 }
 else {
-    Write-Host "[WARNING] Only password authentication detected" -ForegroundColor Yellow
+    $nonPasswordMethods = @(
+        $authMethods | Where-Object {
+            $_.AdditionalProperties.'@odata.type' -ne '#microsoft.graph.passwordAuthenticationMethod'
+        }
+    )
+
+    if ($nonPasswordMethods.Count -gt 0) {
+        Write-Host "[PASS] Additional authentication method(s) registered" -ForegroundColor Green
+    }
+    elseif ($authMethods.Count -gt 0) {
+        Write-Host "[WARNING] Only password authentication detected" -ForegroundColor Yellow
+    }
+    else {
+        Write-Host "[WARNING] No authentication methods found" -ForegroundColor Yellow
+    }
 }
 
 # Export diagnostic report if an export path was provided
 if ($ExportPath) {
 
     # Build readable license list
-    $licenseNames = foreach ($license in $user.AssignedLicenses) {
-
-        $matchedSku = $tenantSkus |
-            Where-Object { $_.SkuId -eq $license.SkuId }
-
-        if ($matchedSku) {
-            "- $($matchedSku.SkuPartNumber)"
-        }
-        else {
-            "- Unknown SKU: $($license.SkuId)"
-        }
+    if (-not $licensingCheckSucceeded) {
+        $licenseNames = "- License details could not be retrieved"
     }
+    else {
+        $licenseNames = foreach ($license in $user.AssignedLicenses) {
 
-    if (-not $licenseNames) {
-        $licenseNames = "- None"
+            $matchedSku = $tenantSkus |
+                Where-Object { $_.SkuId -eq $license.SkuId }
+
+            if ($matchedSku) {
+                "- $($matchedSku.SkuPartNumber)"
+            }
+            else {
+                "- Unknown SKU: $($license.SkuId)"
+            }
+        }
+
+        if (-not $licenseNames) {
+            $licenseNames = "- None"
+        }
     }
 
     # Build readable group list
-    $groupNames = foreach ($groupId in $groupIds) {
-        $group = Get-MgGroup -GroupId $groupId
-        "- $($group.DisplayName)"
+    if (-not $groupCheckSucceeded) {
+        $groupNames = "- Group membership check could not be completed"
     }
-
-    if (-not $groupNames) {
+    elseif ($groupNamesForReport.Count -gt 0) {
+        $groupNames = $groupNamesForReport | ForEach-Object {
+            "- $_"
+        }
+    }
+    else {
         $groupNames = "- None"
     }
 
     # Build readable authentication method list
-    $authMethodNames = foreach ($method in $authMethods) {
+    if (-not $authCheckSucceeded) {
+        $authMethodNames = "- Authentication method check could not be completed"
+    }
+    else {
+        $authMethodNames = foreach ($method in $authMethods) {
 
-        $methodType = $method.AdditionalProperties.'@odata.type'
+            $methodType = $method.AdditionalProperties.'@odata.type'
 
-        switch ($methodType) {
-            "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod" {
-                "- Microsoft Authenticator"
-            }
-            "#microsoft.graph.phoneAuthenticationMethod" {
-                "- Phone authentication"
-            }
-            "#microsoft.graph.fido2AuthenticationMethod" {
-                "- FIDO2 security key"
-            }
-            "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" {
-                "- Windows Hello for Business"
-            }
-            "#microsoft.graph.softwareOathAuthenticationMethod" {
-                "- Software OATH token"
-            }
-            "#microsoft.graph.temporaryAccessPassAuthenticationMethod" {
-                "- Temporary Access Pass"
-            }
-            "#microsoft.graph.passwordAuthenticationMethod" {
-                "- Password"
-            }
-            default {
-                "- Other: $methodType"
+            switch ($methodType) {
+                "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod" {
+                    "- Microsoft Authenticator"
+                }
+                "#microsoft.graph.phoneAuthenticationMethod" {
+                    "- Phone authentication"
+                }
+                "#microsoft.graph.fido2AuthenticationMethod" {
+                    "- FIDO2 security key"
+                }
+                "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" {
+                    "- Windows Hello for Business"
+                }
+                "#microsoft.graph.softwareOathAuthenticationMethod" {
+                    "- Software OATH token"
+                }
+                "#microsoft.graph.temporaryAccessPassAuthenticationMethod" {
+                    "- Temporary Access Pass"
+                }
+                "#microsoft.graph.passwordAuthenticationMethod" {
+                    "- Password"
+                }
+                default {
+                    "- Other: $methodType"
+                }
             }
         }
-    }
 
-    if (-not $authMethodNames) {
-        $authMethodNames = "- None"
+        if (-not $authMethodNames) {
+            $authMethodNames = "- None"
+        }
     }
 
     # Build diagnostic findings
@@ -373,25 +411,37 @@ if ($ExportPath) {
         $findings += "[PASS] Usage location configured"
     }
 
-    if ($licenseCount -gt 0) {
+    if (-not $licensingCheckSucceeded) {
+        $findings += "[WARNING] License details could not be fully retrieved"
+    }
+    elseif ($licenseCount -gt 0) {
         $findings += "[PASS] $licenseCount license(s) assigned"
     }
     else {
         $findings += "[WARNING] No licenses assigned"
     }
 
-    if ($groupIds.Count -gt 0) {
+    if (-not $groupCheckSucceeded) {
+        $findings += "[WARNING] Group membership check could not be completed"
+    }
+    elseif ($groupIds.Count -gt 0) {
         $findings += "[PASS] $($groupIds.Count) group membership(s) found"
     }
     else {
         $findings += "[INFO] No group memberships found"
     }
 
-    if ($nonPasswordMethods.Count -gt 0) {
+    if (-not $authCheckSucceeded) {
+        $findings += "[WARNING] Authentication method check could not be completed"
+    }
+    elseif ($nonPasswordMethods.Count -gt 0) {
         $findings += "[PASS] Additional authentication method(s) registered"
     }
-    else {
+    elseif ($authMethods.Count -gt 0) {
         $findings += "[WARNING] Only password authentication detected"
+    }
+    else {
+        $findings += "[WARNING] No authentication methods found"
     }
 
     $report = @"
