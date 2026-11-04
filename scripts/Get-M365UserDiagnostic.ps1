@@ -128,25 +128,52 @@ Write-Host ""
 Write-Host "GROUP MEMBERSHIP" -ForegroundColor Cyan
 Write-Host "----------------"
 
-$memberships = Get-MgUserMemberOf -UserId $UserPrincipalName -All
+$groupIds = @()
+$groupNamesForReport = @()
+$groupCheckSucceeded = $true
 
-$groupIds = $memberships |
-    Where-Object {
-        $_.AdditionalProperties.'@odata.type' -eq '#microsoft.graph.group'
-    } |
-    Select-Object -ExpandProperty Id
+try {
+    $memberships = Get-MgUserMemberOf `
+        -UserId $UserPrincipalName `
+        -All `
+        -ErrorAction Stop
 
-if ($groupIds.Count -gt 0) {
+    $groupIds = @(
+        $memberships |
+            Where-Object {
+                $_.AdditionalProperties.'@odata.type' -eq '#microsoft.graph.group'
+            } |
+            Select-Object -ExpandProperty Id
+    )
 
-    Write-Host "[INFO] User belongs to $($groupIds.Count) group(s)." -ForegroundColor Cyan
+    if ($groupIds.Count -gt 0) {
 
-    foreach ($groupId in $groupIds) {
-        $group = Get-MgGroup -GroupId $groupId
-        Write-Host "[INFO] Group: $($group.DisplayName)"
+        Write-Host "[INFO] User belongs to $($groupIds.Count) group(s)." -ForegroundColor Cyan
+
+        foreach ($groupId in $groupIds) {
+
+            try {
+                $group = Get-MgGroup `
+                    -GroupId $groupId `
+                    -ErrorAction Stop
+
+                Write-Host "[INFO] Group: $($group.DisplayName)"
+                $groupNamesForReport += $group.DisplayName
+            }
+            catch {
+                Write-Host "[WARNING] Unable to retrieve group details for ID: $groupId" -ForegroundColor Yellow
+            }
+        }
+    }
+    else {
+        Write-Host "[INFO] No group memberships found."
     }
 }
-else {
-    Write-Host "[INFO] No group memberships found."
+catch {
+    $groupCheckSucceeded = $false
+
+    Write-Host "[ERROR] Unable to retrieve group memberships." -ForegroundColor Red
+    Write-Host "[INFO] The diagnostic will continue." -ForegroundColor Cyan
 }
 
 # Retrieve authentication methods
