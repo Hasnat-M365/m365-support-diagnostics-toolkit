@@ -254,6 +254,109 @@ else {
 # Export diagnostic report if an export path was provided
 if ($ExportPath) {
 
+    # Build readable license list
+    $licenseNames = foreach ($license in $user.AssignedLicenses) {
+
+        $matchedSku = $tenantSkus |
+            Where-Object { $_.SkuId -eq $license.SkuId }
+
+        if ($matchedSku) {
+            "- $($matchedSku.SkuPartNumber)"
+        }
+        else {
+            "- Unknown SKU: $($license.SkuId)"
+        }
+    }
+
+    if (-not $licenseNames) {
+        $licenseNames = "- None"
+    }
+
+    # Build readable group list
+    $groupNames = foreach ($groupId in $groupIds) {
+        $group = Get-MgGroup -GroupId $groupId
+        "- $($group.DisplayName)"
+    }
+
+    if (-not $groupNames) {
+        $groupNames = "- None"
+    }
+
+    # Build readable authentication method list
+    $authMethodNames = foreach ($method in $authMethods) {
+
+        $methodType = $method.AdditionalProperties.'@odata.type'
+
+        switch ($methodType) {
+            "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod" {
+                "- Microsoft Authenticator"
+            }
+            "#microsoft.graph.phoneAuthenticationMethod" {
+                "- Phone authentication"
+            }
+            "#microsoft.graph.fido2AuthenticationMethod" {
+                "- FIDO2 security key"
+            }
+            "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" {
+                "- Windows Hello for Business"
+            }
+            "#microsoft.graph.softwareOathAuthenticationMethod" {
+                "- Software OATH token"
+            }
+            "#microsoft.graph.temporaryAccessPassAuthenticationMethod" {
+                "- Temporary Access Pass"
+            }
+            "#microsoft.graph.passwordAuthenticationMethod" {
+                "- Password"
+            }
+            default {
+                "- Other: $methodType"
+            }
+        }
+    }
+
+    if (-not $authMethodNames) {
+        $authMethodNames = "- None"
+    }
+
+    # Build diagnostic findings
+    $findings = @()
+
+    if ($user.AccountEnabled) {
+        $findings += "[PASS] Account enabled"
+    }
+    else {
+        $findings += "[WARNING] Account disabled"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($user.UsageLocation)) {
+        $findings += "[WARNING] Usage location missing"
+    }
+    else {
+        $findings += "[PASS] Usage location configured"
+    }
+
+    if ($licenseCount -gt 0) {
+        $findings += "[PASS] $licenseCount license(s) assigned"
+    }
+    else {
+        $findings += "[WARNING] No licenses assigned"
+    }
+
+    if ($groupIds.Count -gt 0) {
+        $findings += "[PASS] $($groupIds.Count) group membership(s) found"
+    }
+    else {
+        $findings += "[INFO] No group memberships found"
+    }
+
+    if ($nonPasswordMethods.Count -gt 0) {
+        $findings += "[PASS] Additional authentication method(s) registered"
+    }
+    else {
+        $findings += "[WARNING] Only password authentication detected"
+    }
+
     $report = @"
 Microsoft 365 User Diagnostic Report
 ====================================
@@ -267,22 +370,21 @@ Usage Location: $($user.UsageLocation)
 LICENSING
 ---------
 Assigned Licenses: $licenseCount
+$($licenseNames -join "`n")
 
 GROUP MEMBERSHIP
 ----------------
 Group Memberships: $($groupIds.Count)
+$($groupNames -join "`n")
 
-AUTHENTICATION
---------------
+AUTHENTICATION METHODS
+----------------------
 Registered Authentication Methods: $($authMethods.Count)
+$($authMethodNames -join "`n")
 
-DIAGNOSTIC SUMMARY
-------------------
-Account Enabled: $($user.AccountEnabled)
-Usage Location Configured: $(-not [string]::IsNullOrWhiteSpace($user.UsageLocation))
-Licenses Assigned: $licenseCount
-Group Memberships: $($groupIds.Count)
-Authentication Methods: $($authMethods.Count)
+DIAGNOSTIC FINDINGS
+-------------------
+$($findings -join "`n")
 
 Generated: $(Get-Date)
 "@
