@@ -89,24 +89,34 @@ Write-Host "LICENSING" -ForegroundColor Cyan
 Write-Host "---------"
 
 $licenseCount = $user.AssignedLicenses.Count
+$tenantSkus = @()
+$licensingCheckSucceeded = $true
 
 if ($licenseCount -gt 0) {
 
     Write-Host "[PASS] $licenseCount license(s) assigned." -ForegroundColor Green
 
-    $tenantSkus = Get-MgSubscribedSku -All
+    try {
+        $tenantSkus = Get-MgSubscribedSku -All -ErrorAction Stop
 
-    foreach ($license in $user.AssignedLicenses) {
+        foreach ($license in $user.AssignedLicenses) {
 
-        $matchedSku = $tenantSkus |
-            Where-Object { $_.SkuId -eq $license.SkuId }
+            $matchedSku = $tenantSkus |
+                Where-Object { $_.SkuId -eq $license.SkuId }
 
-        if ($matchedSku) {
-            Write-Host "[INFO] License: $($matchedSku.SkuPartNumber)"
+            if ($matchedSku) {
+                Write-Host "[INFO] License: $($matchedSku.SkuPartNumber)"
+            }
+            else {
+                Write-Host "[INFO] Unknown SKU: $($license.SkuId)"
+            }
         }
-        else {
-            Write-Host "[INFO] Unknown SKU: $($license.SkuId)"
-        }
+    }
+    catch {
+        $licensingCheckSucceeded = $false
+
+        Write-Host "[ERROR] Unable to retrieve license details." -ForegroundColor Red
+        Write-Host "[INFO] The diagnostic will continue." -ForegroundColor Cyan
     }
 }
 else {
